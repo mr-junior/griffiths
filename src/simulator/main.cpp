@@ -18,6 +18,73 @@
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 
+
+std::string activation_mode;
+std::string network_path;
+std::string active_nodes_path;
+
+std::string output_folder;
+
+bool keep_intermediate_output = false;
+
+struct model_parameters_t
+{
+    double mu_;
+    double lambda_;
+    double alpha_;
+    std::size_t step_count_;
+};
+
+class model_t
+{
+    model_parameters_t parameters_;
+};
+
+class model_simulator_t
+{
+public:
+    model_simulator();
+    void simulate();
+
+private:
+
+};
+
+void perform_propagation_model_a(const std::mt19937& gen, const std::vector<std::size_t>& inactive_neighbours, boost::dynamic_bitset<>& states)
+{
+    std::vector<std::size_t> inactive_neighbours;
+    for (std::size_t i : adj[node]) {
+        if (states[i]) {
+            inactive_neighbours.emplace_back(i);
+        }
+    }
+    if (!inactive_neighbours.empty()) {
+        std::uniform_int_distribution<std::size_t> uid{ 0, inactive_neighbours.size() - 1 };
+        std::size_t node_2 = inactive_neighbours[uid(gen)];
+        states[node_2] = false;
+    }
+}
+void perform_propagation_model_b(const std::mt19937& gen, const std::vector<std::size_t>& inactive_neighbours, boost::dynamic_bitset<>& states)
+{
+    std::vector<std::size_t> inactive_neighbours;
+    for (std::size_t i : adj[node]) {
+        if (states[i]) {
+            inactive_neighbours.emplace_back(i);
+        }
+    }
+    if (!inactive_neighbours.empty()) {
+        for (std::size_t y = 0; y < inactive_neighbours.size(); ++y)
+        {
+            if (1 == bernoulli_propagation(gen))
+            {
+                states[inactive_neighbours[y]] = false;
+            }
+        }
+    }
+    states[active_nodes[rand_index]] = true;
+}
+
+
 int main(int argc, char* argv[])
 {
     double mu = 0.;
@@ -108,25 +175,17 @@ int main(int argc, char* argv[])
     double propagation_p = lambda / (lambda + mu); // the probability of activity propagation reaction.
     double deactication_p = mu / (lambda + mu); // the probability of the node deactivation reaction.
 
-    std::bernoulli_distribution bernoulli_deactivation(deactication_p);
-    std::bernoulli_distribution bernoulli_propagation(propagation_p);
-
     std::vector<std::string> output_file_names;
-
-    std::random_device rd;
 
     std::vector<long double> averaged_points(step_count, 0.0);
 
 #pragma omp parallel for
     for (std::size_t r = 0; r < repetition_count; ++r) {
-        //std::random_device rd;
-        //std::mt19937 gen(rd());
-        unsigned int duration = 0;
-#pragma omp critical
-        {
-            duration = rd();
-        }
-        std::mt19937 gen(duration);
+        std::random_device rd;
+        std::mt19937 gen(rd());
+
+        std::bernoulli_distribution bernoulli_deactivation(deactication_p);
+        std::bernoulli_distribution bernoulli_propagation(propagation_p);
 
         std::stringstream name;
         std::ofstream fout;
@@ -193,23 +252,7 @@ int main(int argc, char* argv[])
                         inactive_neighbours.emplace_back(i);
                     }
                 }
-
-                if (!inactive_neighbours.empty()) {
-                    // Model A
-                    std::uniform_int_distribution<std::size_t> uid{ 0, inactive_neighbours.size() - 1 };
-                    std::size_t node_2 = inactive_neighbours[uid(gen)];
-                    states[node_2] = false;
-                    // Model B
-                    //for (std::size_t y = 0; y < inactive_neighbours.size(); ++y)
-                    //{
-                    //    if (1 == bernoulli_propagation(gen))
-                    //    {
-                    //        states[inactive_neighbours[y]] = false;
-                    //    }
-                    //}
-                }
-                // Model B
-                //states[active_nodes[rand_index]] = true;
+                perform_propagation(inactive_neighbours, states);
             }
             ++time;
         }
