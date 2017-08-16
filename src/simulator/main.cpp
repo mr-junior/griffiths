@@ -40,14 +40,22 @@ class model_t
     model_parameters_t parameters_;
 };
 
+class model_a_t : public model_t
+{
+};
+
+class model_b_t : public model_t
+{
+};
+
 class model_simulator_t
 {
 public:
-    model_simulator();
-    void simulate();
+    model_simulator_t();
+    void simulate(std::shared_ptr<model_t> model);
 
 private:
-
+    model_parameters_t parameters_;
 };
 
 void perform_propagation_model_a(const std::mt19937& gen, const std::vector<std::size_t>& inactive_neighbours, boost::dynamic_bitset<>& states)
