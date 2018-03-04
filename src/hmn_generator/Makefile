@@ -6,7 +6,7 @@ DIR=objs
 BIN=bin
 SOURCES=$(wildcard *.cpp)
 OBJS=$(patsubst %.cpp, $(DIR)/%.o, $(SOURCES))
-TARGET_NAME=distribution_calculator.exe
+TARGET_NAME=hmn_generator.exe
 TARGET=$(BIN)/$(TARGET_NAME)
 
 all: $(TARGET)
