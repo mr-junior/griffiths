@@ -76,7 +76,9 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			throw std::runtime_error("Invalid input data: one of the lines does not contain enough columns.");
+			std::cerr << "Invalid input data: one of the lines does not contain enough columns." << std::endl;
+			in.close();
+			return -1;
 		}
 	}
 	in.close();
